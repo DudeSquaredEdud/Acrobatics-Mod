@@ -1,0 +1,27 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url 'https://jitpack.io/' }
+    }
+    dependencies {
+        classpath('com.fox2code.FoxLoader:dev:1.2.30')
+    }
+}
+
+apply plugin: 'foxloader.dev'
+
+version '1.2'
+
+foxloader {
+    // forceReload = true
+    modId = "dudesquaredacrobatics"
+    modName = "Dude2eduD's Acrobatics Mod"
+    modVersion = project.version
+    modDesc = "A mod that adds a dash and a super jump"
+    clientMod = "com.bingus.bingustruggles.BingusStrugglesClient"
+    serverMod = "com.bingus.bingustruggles.BingusStrugglesServer"
+    // Development tools don't like that both client and server define
+    // the same classes, so uncomment to disable the side inclusion.
+    // includeClient = false
+    // includeServer = false
+}
