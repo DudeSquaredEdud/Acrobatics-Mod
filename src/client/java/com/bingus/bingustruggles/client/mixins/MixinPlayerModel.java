@@ -13,17 +13,19 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ModelBiped2.class)
-public class MixinPlayerModel extends ModelBase2 {
+public abstract class MixinPlayerModel extends ModelBase2 {
     @Shadow
     public Piece bipedBody;
+    @Shadow
+    public Piece bipedRightArm;
+    @Shadow
+    public Piece bipedLeftArm;
 
     @Inject(method = "setRotationAngles", at = @At("HEAD"))
-    public void setRotationAngles(float forward, float haltDelta, float tick, float yaw, float pitch, float unused, Entity entity, CallbackInfo ci){
-        ModelBiped2 instance = (ModelBiped2) (Object) this;
-        if (Minecraft.theMinecraft.thePlayer.isCollidedHorizontally){
-            bipedBody.rotateAngleX += 0.9F;
-            Minecraft.theMinecraft.thePlayer.sendChatMessage("WALL");
-        }
+    public void injectRotationAngles (float forward, float haltDelta, float tick, float yaw, float pitch, float unused, Entity entity, CallbackInfo ci){
+        this.bipedBody.rotateAngleX += 0.9F;
+        this.bipedRightArm.rotateAngleX += -0.6283185F;
+        this.bipedLeftArm.rotateAngleX += -0.6283185F;
     }
 
     @Override
