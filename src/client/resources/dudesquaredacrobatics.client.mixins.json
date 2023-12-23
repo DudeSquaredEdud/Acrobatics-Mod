@@ -4,6 +4,8 @@
   "package": "com.bingus.bingustruggles.client.mixins",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "MixinPlayerModel"
+    "MixinEntityPlayer",
+    "MixinPlayerModel",
+    "MixinEntitiy"
   ]
 }

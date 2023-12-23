@@ -9,6 +9,7 @@ import com.fox2code.foxloader.network.NetworkPlayer;
 import ibxm.Player;
 import net.minecraft.client.Minecraft;
 import net.minecraft.src.client.KeyBinding;
+import net.minecraft.src.client.physics.AxisAlignedBB;
 import net.minecraft.src.client.player.EntityPlayerSP;
 import org.lwjgl.input.Keyboard;
 
@@ -23,6 +24,7 @@ public class BingusStrugglesClient extends BingusStruggles implements ClientMod 
         System.out.println("Acrobatics Mod initializing!");
         //This puts the keybinding in the in-game menu
         KeyBindingAPI.registerKeyBinding(dash);
+        KeyBindingAPI.registerKeyBinding(prone);
         //This code makes a new file to save settings in
         try {
             FileReader savedSettings = new FileReader("mods/AcrobaticsModSettings.txt");
@@ -39,6 +41,7 @@ public class BingusStrugglesClient extends BingusStruggles implements ClientMod 
 
 //Public Variables
 public KeyBinding dash = new KeyBinding("Dash", 15); //15 is the keycode for tab; this is what I find easy.
+    public KeyBinding prone = new KeyBinding("Prone", 29); //15 is the keycode for lcontrol
     boolean dashed = false; // used to tell if the player has dashed recently
     long dashtimer = System.currentTimeMillis(); // This is used with dashtimecooldown to determine the cooldown
     int dashtimeCooldown = 2000; // The dash cooldown, in milliseconds
@@ -52,11 +55,16 @@ public KeyBinding dash = new KeyBinding("Dash", 15); //15 is the keycode for tab
     boolean shiftWasHeldLastTick = false; // what it says on the tin ; true if shift was held last tick
 
     boolean shiftWasHeldTickBeforeLast = false; // true if shift was held tick before last
-    boolean oknowstopforabit = false;
-    static boolean isProne = false;
+    boolean shiftWasHeldTickBeforeBeforeLast = false; // etc., etc.
+    public static boolean isProne = false;
+    float proneHeight = 0.25F;
 
     EntityPlayerSP OurPlayer; // simplification variable
     boolean reasonableDashingTime; // if it's a reasonable time to dash
+    long hundredMillicecondTimer = System.currentTimeMillis();
+    
+    public static float height = 0.37F;
+
 
     public void onTick() {
 
@@ -107,24 +115,46 @@ public KeyBinding dash = new KeyBinding("Dash", 15); //15 is the keycode for tab
             if(dashed && dashtimer < System.currentTimeMillis()){
                 dashed = false;
             }
-//            if(Keyboard.isKeyDown(Keyboard.KEY_P) && !oknowstopforabit) {
-//                oknowstopforabit = true;
-//                OurPlayer.sendChatMessage("Prone Active");
-//                isProne = true;
-//
-//            }
-//
-//            if(Keyboard.isKeyDown(Keyboard.KEY_L)){
-//                oknowstopforabit = false;
-//                OurPlayer.sendChatMessage("Prone inactive");
-//                isProne = false;
-//            }
 
-            // settings the spacewasheldlasttick var
-            spaceWasHeldLastTick = Keyboard.isKeyDown(Keyboard.KEY_SPACE);
-            shiftWasHeldTickBeforeLast = shiftWasHeldLastTick;
-            shiftWasHeldLastTick = Keyboard.isKeyDown(Keyboard.KEY_LSHIFT);
+            //CRAWLING
+
+            if(Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)){
+                isProne = false;
+            }
+            if(reasonableDashingTime && Keyboard.isKeyDown(prone.keyCode) && hundredMillicecondTimer < System.currentTimeMillis()) {
+                isProne = !isProne;
+                if(isProne) {
+                    OurPlayer.boundingBox.setBounds(0+OurPlayer.posX,0+OurPlayer.posY,0+OurPlayer.posZ,.7+OurPlayer.posX,.5+OurPlayer.posY,0.7+OurPlayer.posZ);
+                    OurPlayer.posY -=1;
+                }
+                else
+                    OurPlayer.boundingBox.setBounds(0+OurPlayer.posX,0+OurPlayer.posY,0+OurPlayer.posZ,.7+OurPlayer.posX,1.8+OurPlayer.posY,0.7+OurPlayer.posZ);
+                hundredMillicecondTimer = System.currentTimeMillis() + 400;
+
+            }
+            if(isProne){
+                OurPlayer.yOffset = height;
+                OurPlayer.landMovementFactor = 0.07F;
+            }
+            else{
+                OurPlayer.yOffset = 1.675F;
+            }
+
+            //WHAT IS IT WIHT OPAQUE BLOCKS?!?!?!??!?!?!??!??!?!?!
+
+
+
         } catch (Exception e){} // No u
+    }
+
+    @Override //This fixes a bug that would trap the player underground if they leave the world while prone
+    public boolean onNetworkPlayerDisconnected(NetworkPlayer networkPlayer, String kickMessage, boolean cancelled) {
+        if(isProne) {
+            OurPlayer.yOffset += 1.675F;
+            OurPlayer.posY += 1.5F;
+            isProne = false;
+        }
+        return super.onNetworkPlayerDisconnected(networkPlayer, kickMessage, cancelled);
     }
 }
 
