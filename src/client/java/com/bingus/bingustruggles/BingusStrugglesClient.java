@@ -117,25 +117,32 @@ public KeyBinding dash = new KeyBinding("Dash", 15); //15 is the keycode for tab
             }
 
             //CRAWLING
-
-            if(Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)){
+            //Note: update this later to the keycode for sneaking
+            //This sets prone to false if you try to sneak, jump, sleep, etc
+            if(OurPlayer.isSneaking() || OurPlayer.isJumping || OurPlayer.isPlayerSleeping()){
                 isProne = false;
             }
+            //turns out a reasonable dashing time is a reasonable prone time
+            //this makes the player prone
             if(reasonableDashingTime && Keyboard.isKeyDown(prone.keyCode) && hundredMillicecondTimer < System.currentTimeMillis()) {
-                isProne = !isProne;
-                if(isProne) {
-                    OurPlayer.boundingBox.setBounds(0+OurPlayer.posX,0+OurPlayer.posY,0+OurPlayer.posZ,.7+OurPlayer.posX,.5+OurPlayer.posY,0.7+OurPlayer.posZ);
+                isProne = !isProne; //flip flop
+                if(isProne) { //Changes your hitbox and teleports you down
+                    OurPlayer.boundingBox.setBounds(0+OurPlayer.posX,0+OurPlayer.posY,0+OurPlayer.posZ,.7+OurPlayer.posX,.7+OurPlayer.posY,0.7+OurPlayer.posZ);
                     OurPlayer.posY -=1;
                 }
-                else
-                    OurPlayer.boundingBox.setBounds(0+OurPlayer.posX,0+OurPlayer.posY,0+OurPlayer.posZ,.7+OurPlayer.posX,1.8+OurPlayer.posY,0.7+OurPlayer.posZ);
-                hundredMillicecondTimer = System.currentTimeMillis() + 400;
-
+                else {//reverses the above
+                    OurPlayer.boundingBox.setBounds(0 + OurPlayer.posX, 0 + OurPlayer.posY, 0 + OurPlayer.posZ, .7 + OurPlayer.posX, 1.8 + OurPlayer.posY, 0.7 + OurPlayer.posZ);
+                    OurPlayer.posY += 1;
+                }
+                //this is a timer for how often you can change position.
+                hundredMillicecondTimer = System.currentTimeMillis() + 600;
             }
+
             if(isProne){
                 OurPlayer.yOffset = height;
                 OurPlayer.landMovementFactor = 0.07F;
             }
+
             else{
                 OurPlayer.yOffset = 1.675F;
             }

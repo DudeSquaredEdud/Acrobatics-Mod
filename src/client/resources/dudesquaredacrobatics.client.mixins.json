@@ -6,6 +6,6 @@
   "mixins": [
     "MixinEntityPlayer",
     "MixinPlayerModel",
-    "MixinEntitiy"
+    "MixinEntityForCrawling"
   ]
 }
