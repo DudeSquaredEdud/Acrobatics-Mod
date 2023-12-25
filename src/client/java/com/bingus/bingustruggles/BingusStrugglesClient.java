@@ -2,20 +2,18 @@ package com.bingus.bingustruggles;
 
 import com.fox2code.foxloader.client.KeyBindingAPI;
 import com.fox2code.foxloader.loader.ClientMod;
-import com.fox2code.foxloader.loader.Mod;
 import com.fox2code.foxloader.loader.packet.ClientHello;
-import com.fox2code.foxloader.loader.packet.FoxPacket;
 import com.fox2code.foxloader.network.NetworkPlayer;
-import ibxm.Player;
 import net.minecraft.client.Minecraft;
 import net.minecraft.src.client.KeyBinding;
-import net.minecraft.src.client.physics.AxisAlignedBB;
 import net.minecraft.src.client.player.EntityPlayerSP;
+import net.minecraft.src.game.nbt.NBTTagCompound;
 import org.lwjgl.input.Keyboard;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 public class BingusStrugglesClient extends BingusStruggles implements ClientMod {
 
@@ -39,7 +37,18 @@ public class BingusStrugglesClient extends BingusStruggles implements ClientMod 
         }
     }
 
-//Public Variables
+    @Override
+    public boolean onNetworkPlayerDisconnected(NetworkPlayer networkPlayer, String kickMessage, boolean cancelled) {
+        //This only serves to make sure the player doesn't get teleported down
+            // two blocks when they leave a world while crouched
+        if(networkPlayer.getPlayerName().equals(OurPlayer.getPlayerName()) && isProne){
+            isProne = false;
+            OurPlayer.moveEntity(0,1.8,0);
+        }
+        return super.onNetworkPlayerDisconnected(networkPlayer, kickMessage, cancelled);
+    }
+
+    //Public Variables
 public KeyBinding dash = new KeyBinding("Dash", 15); //15 is the keycode for tab; this is what I find easy.
     public KeyBinding prone = new KeyBinding("Prone", 29); //15 is the keycode for lcontrol
     boolean dashed = false; // used to tell if the player has dashed recently
@@ -51,26 +60,22 @@ public KeyBinding dash = new KeyBinding("Dash", 15); //15 is the keycode for tab
 
     int wallJumpTimer; // The timer for when you can walljump
     boolean spaceWasHeldLastTick = false; // what it says on the tin ; true if space was held last tick
-
-    boolean shiftWasHeldLastTick = false; // what it says on the tin ; true if shift was held last tick
-
-    boolean shiftWasHeldTickBeforeLast = false; // true if shift was held tick before last
-    boolean shiftWasHeldTickBeforeBeforeLast = false; // etc., etc.
     public static boolean isProne = false;
-    float proneHeight = 0.25F;
 
     EntityPlayerSP OurPlayer; // simplification variable
     boolean reasonableDashingTime; // if it's a reasonable time to dash
+    boolean reasonableUnProneingTime; // if it's a reasonable time to get up
     long hundredMillicecondTimer = System.currentTimeMillis();
     
     public static float height = 0.37F;
+    boolean ForceProne = false;
 
 
     public void onTick() {
 
-        OurPlayer = Minecraft.getInstance().thePlayer; // it is almost silly how much time this saves
+        OurPlayer = Minecraft.getInstance().thePlayer; //it is almost silly how much time this saves
         try{
-            //WallJumping
+            //WALL JUMPING
             //If the player is against a wall and not on the ground and the timer is within reason
             if (OurPlayer.isCollidedHorizontally && !OurPlayer.onGround && wallJumpTimer < 10){
                 //If the player presses space again
@@ -91,7 +96,8 @@ public KeyBinding dash = new KeyBinding("Dash", 15); //15 is the keycode for tab
                             && !OurPlayer.isPlayerSleeping()
                             && !OurPlayer.isDead;
 
-            //Dashing
+
+            //DASHING
             //Check for reasonability, as well as dashed status and if the button is pressed
             if(reasonableDashingTime && !dashed && Keyboard.isKeyDown(dash.keyCode)){
                 OurPlayer.motionY = .4; // small jump
@@ -116,52 +122,44 @@ public KeyBinding dash = new KeyBinding("Dash", 15); //15 is the keycode for tab
                 dashed = false;
             }
 
+            reasonableUnProneingTime = Minecraft.getInstance().theWorld.isBlockNormalCube((int)OurPlayer.posX, (int) OurPlayer.posY+1, (int)OurPlayer.posZ);
+
             //CRAWLING
-            //Note: update this later to the keycode for sneaking
-            //This sets prone to false if you try to sneak, jump, sleep, etc
-            if(OurPlayer.isSneaking() || OurPlayer.isJumping || OurPlayer.isPlayerSleeping()){
-                isProne = false;
-            }
             //turns out a reasonable dashing time is a reasonable prone time
             //this makes the player prone
-            if(reasonableDashingTime && Keyboard.isKeyDown(prone.keyCode) && hundredMillicecondTimer < System.currentTimeMillis()) {
+            if(((reasonableDashingTime && Keyboard.isKeyDown(prone.keyCode) && hundredMillicecondTimer < System.currentTimeMillis()) && OurPlayer.onGround) || ForceProne) {
                 isProne = !isProne; //flip flop
                 if(isProne) { //Changes your hitbox and teleports you down
+                    OurPlayer.ySize +=2 ;
                     OurPlayer.boundingBox.setBounds(0+OurPlayer.posX,0+OurPlayer.posY,0+OurPlayer.posZ,.7+OurPlayer.posX,.7+OurPlayer.posY,0.7+OurPlayer.posZ);
-                    OurPlayer.posY -=1;
+                    OurPlayer.moveEntity(0, 0-1.5, 0);
                 }
                 else {//reverses the above
+                    OurPlayer.ySize -=2 ;
                     OurPlayer.boundingBox.setBounds(0 + OurPlayer.posX, 0 + OurPlayer.posY, 0 + OurPlayer.posZ, .7 + OurPlayer.posX, 1.8 + OurPlayer.posY, 0.7 + OurPlayer.posZ);
-                    OurPlayer.posY += 1;
                 }
                 //this is a timer for how often you can change position.
                 hundredMillicecondTimer = System.currentTimeMillis() + 600;
             }
 
             if(isProne){
-                OurPlayer.yOffset = height;
-                OurPlayer.landMovementFactor = 0.07F;
+                OurPlayer.yOffset = height;  //This causes issues when the game is closed >:(
+                OurPlayer.landMovementFactor = 0.04F;
+                OurPlayer.stepHeight = 0;
             }
-
             else{
-                OurPlayer.yOffset = 1.675F;
+                OurPlayer.yOffset = 1.62F;
+                OurPlayer.stepHeight = .5f;
             }
 
-            //WHAT IS IT WIHT OPAQUE BLOCKS?!?!?!??!?!?!??!??!?!?!
-
-
+            //This sets prone to false if you try to sneak, jump, sleep, etc
+            if(OurPlayer.isSneaking() || OurPlayer.isJumping || OurPlayer.isPlayerSleeping()){
+                isProne = false;
+            }
 
         } catch (Exception e){} // No u
     }
 
-    @Override //This fixes a bug that would trap the player underground if they leave the world while prone
-    public boolean onNetworkPlayerDisconnected(NetworkPlayer networkPlayer, String kickMessage, boolean cancelled) {
-        if(isProne) {
-            OurPlayer.yOffset += 1.675F;
-            OurPlayer.posY += 1.5F;
-            isProne = false;
-        }
-        return super.onNetworkPlayerDisconnected(networkPlayer, kickMessage, cancelled);
-    }
+
 }
 

@@ -4,8 +4,10 @@
   "package": "com.bingus.bingustruggles.client.mixins",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
+    "MixinEntityForCrawling",
+    "MixinEntityLiving",
     "MixinEntityPlayer",
     "MixinPlayerModel",
-    "MixinEntityForCrawling"
+    "MixinPlayerRenderer"
   ]
 }
