@@ -12,8 +12,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinEntityLiving {
     @Shadow public boolean isJumping;
 
+    //Makes it so that the player cannot jump when crawling
     @Inject(method = "onLivingUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/src/game/entity/EntityLiving;handleLavaMovement()Z"))
-    public void dontJumpWhenCrouched(CallbackInfo ci){
+    public void dontJumpWhenCrawling(CallbackInfo ci){
         if(BingusStrugglesClient.isProne) this.isJumping = false;
     }
 }

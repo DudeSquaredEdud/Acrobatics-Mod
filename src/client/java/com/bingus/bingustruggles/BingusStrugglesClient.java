@@ -2,38 +2,58 @@ package com.bingus.bingustruggles;
 
 import com.fox2code.foxloader.client.KeyBindingAPI;
 import com.fox2code.foxloader.loader.ClientMod;
-import com.fox2code.foxloader.loader.packet.ClientHello;
 import com.fox2code.foxloader.network.NetworkPlayer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.src.client.KeyBinding;
 import net.minecraft.src.client.player.EntityPlayerSP;
-import net.minecraft.src.game.nbt.NBTTagCompound;
 import org.lwjgl.input.Keyboard;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Objects;
 
 public class BingusStrugglesClient extends BingusStruggles implements ClientMod {
 
+
+    public KeyBinding dash = new KeyBinding("Dash", 15); //15 is the keycode for tab; this is what I find easy.
+    public KeyBinding prone = new KeyBinding("Prone", 29); //15 is the keycode for lcontrol
+
+    FileReader savedSettings = null;
+    FileWriter settingsSaver = null;
     @Override //Init Sequence
     public void onInit() {
         System.out.println("Acrobatics Mod initializing!");
         //This puts the keybinding in the in-game menu
         KeyBindingAPI.registerKeyBinding(dash);
         KeyBindingAPI.registerKeyBinding(prone);
+
         //This code makes a new file to save settings in
         try {
-            FileReader savedSettings = new FileReader("mods/AcrobaticsModSettings.txt");
-        }
-        catch(FileNotFoundException e){
+            savedSettings = new FileReader("mods/AcrobaticsModSettings.txt");
+            settingsSaver = new FileWriter("mods/AcrobaticsModSettings.txt");
+        } catch (FileNotFoundException e) {
             //This complicated try catch just makes a file; the try/catch in this catch is more of a formality
             try {
                 Files.createFile(Paths.get("mods/AcrobaticsModSettings.txt"));
+                savedSettings = new FileReader("mods/AcrobaticsModSettings.txt");
+                settingsSaver = new FileWriter("mods/AcrobaticsModSettings.txt");
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        //GIANT TRY CATCHES!! AARRGGHHH
+        //These just read in the keycodes as chars
+        try {
+            dash.keyCode = savedSettings.read();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            prone.keyCode = savedSettings.read();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -44,13 +64,17 @@ public class BingusStrugglesClient extends BingusStruggles implements ClientMod 
         if(networkPlayer.getPlayerName().equals(OurPlayer.getPlayerName()) && isProne){
             isProne = false;
             OurPlayer.moveEntity(0,1.8,0);
+            try {
+                settingsSaver.write((char) dash.keyCode + (char) prone.keyCode);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
+
         return super.onNetworkPlayerDisconnected(networkPlayer, kickMessage, cancelled);
     }
 
     //Public Variables
-public KeyBinding dash = new KeyBinding("Dash", 15); //15 is the keycode for tab; this is what I find easy.
-    public KeyBinding prone = new KeyBinding("Prone", 29); //15 is the keycode for lcontrol
     boolean dashed = false; // used to tell if the player has dashed recently
     long dashtimer = System.currentTimeMillis(); // This is used with dashtimecooldown to determine the cooldown
     int dashtimeCooldown = 2000; // The dash cooldown, in milliseconds
@@ -66,13 +90,11 @@ public KeyBinding dash = new KeyBinding("Dash", 15); //15 is the keycode for tab
     boolean reasonableDashingTime; // if it's a reasonable time to dash
     boolean reasonableUnProneingTime; // if it's a reasonable time to get up
     long hundredMillicecondTimer = System.currentTimeMillis();
-    
+
     public static float height = 0.37F;
     boolean ForceProne = false;
 
-
     public void onTick() {
-
         OurPlayer = Minecraft.getInstance().thePlayer; //it is almost silly how much time this saves
         try{
             //WALL JUMPING
@@ -90,14 +112,14 @@ public KeyBinding dash = new KeyBinding("Dash", 15); //15 is the keycode for tab
             if (OurPlayer.onGround){
                 wallJumpTimer = 0;
             }
+
+
+            //DASHING
             //Check to see if it's a reasonable time to dash
             reasonableDashingTime =
                             Minecraft.getInstance().inGameHasFocus
                             && !OurPlayer.isPlayerSleeping()
                             && !OurPlayer.isDead;
-
-
-            //DASHING
             //Check for reasonability, as well as dashed status and if the button is pressed
             if(reasonableDashingTime && !dashed && Keyboard.isKeyDown(dash.keyCode)){
                 OurPlayer.motionY = .4; // small jump
@@ -131,12 +153,12 @@ public KeyBinding dash = new KeyBinding("Dash", 15); //15 is the keycode for tab
                 isProne = !isProne; //flip flop
                 if(isProne) { //Changes your hitbox and teleports you down
                     OurPlayer.ySize +=2 ;
-                    OurPlayer.boundingBox.setBounds(0+OurPlayer.posX,0+OurPlayer.posY,0+OurPlayer.posZ,.7+OurPlayer.posX,.7+OurPlayer.posY,0.7+OurPlayer.posZ);
+                    OurPlayer.boundingBox.setBounds(0+OurPlayer.posX,0.11+OurPlayer.posY,0+OurPlayer.posZ,.7+OurPlayer.posX,.7+OurPlayer.posY,0.7+OurPlayer.posZ);
                     OurPlayer.moveEntity(0, 0-1.5, 0);
                 }
                 else {//reverses the above
                     OurPlayer.ySize -=2 ;
-                    OurPlayer.boundingBox.setBounds(0 + OurPlayer.posX, 0 + OurPlayer.posY, 0 + OurPlayer.posZ, .7 + OurPlayer.posX, 1.8 + OurPlayer.posY, 0.7 + OurPlayer.posZ);
+                    OurPlayer.boundingBox.setBounds(0 + OurPlayer.posX, 0.11 + OurPlayer.posY, 0 + OurPlayer.posZ, .7 + OurPlayer.posX, 1.8 + OurPlayer.posY, 0.7 + OurPlayer.posZ);
                 }
                 //this is a timer for how often you can change position.
                 hundredMillicecondTimer = System.currentTimeMillis() + 600;
@@ -157,7 +179,7 @@ public KeyBinding dash = new KeyBinding("Dash", 15); //15 is the keycode for tab
                 isProne = false;
             }
 
-        } catch (Exception e){} // No u
+        } catch (Exception ignored){} // No u
     }
 
 

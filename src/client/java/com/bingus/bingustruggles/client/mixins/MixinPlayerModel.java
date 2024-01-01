@@ -1,21 +1,18 @@
 package com.bingus.bingustruggles.client.mixins;
 
-import com.bingus.bingustruggles.BingusStruggles;
 import com.bingus.bingustruggles.BingusStrugglesClient;
-import net.minecraft.client.Minecraft;
 import net.minecraft.src.client.model.ModelBase2;
 import net.minecraft.src.client.model.ModelBiped2;
-import net.minecraft.src.client.model.Piece;
 import net.minecraft.src.client.model.PieceNew;
 import net.minecraft.src.game.MathHelper;
 import net.minecraft.src.game.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.logging.Logger;
 
 @Mixin(ModelBiped2.class)
 public abstract class MixinPlayerModel extends ModelBase2{
@@ -33,8 +30,12 @@ public abstract class MixinPlayerModel extends ModelBase2{
     public PieceNew bipedHead;
     @Shadow
     public PieceNew bipedHeadwear;
+    @Shadow
+    public PieceNew bipedCloak;
+
     @Shadow public boolean isSneak;
-    float f6 = this.onGround;
+    @Unique //Intelli J asked me to do this fancy naming stuff.
+    float bingusStruggles$f6 = this.onGround;
 
     @Inject(method = "setRotationAngles", at = @At("TAIL"))
     public void injectRotationAngles (float forward, float haltDelta, float tick, float yaw, float pitch, float unused, Entity entity, CallbackInfo ci){
@@ -63,6 +64,8 @@ public abstract class MixinPlayerModel extends ModelBase2{
             this.bipedRightArm.rotateAngleX = (float) ((MathHelper.cos(forward * 0.6662F + 3.141593F) * 0.7F * haltDelta) -Math.PI/2);
             this.bipedLeftArm.rotateAngleX = (float) ((MathHelper.cos(forward * 0.6662F) * 0.7F * haltDelta) -Math.PI/2);
 
+            this.bipedCloak.rotationPointY = 20.0f;
+            this.bipedCloak.rotateAngleX = (float) -Math.PI/2;
 
             this.bipedRightLeg.rotationPointY = 22.0F;
             this.bipedLeftLeg.rotationPointY = 22.0F;
@@ -74,9 +77,13 @@ public abstract class MixinPlayerModel extends ModelBase2{
         else{
             this.bipedRightArm.rotationPointY = 2.0F;
             this.bipedLeftArm.rotationPointY = 2.0F;
-            this.bipedBody.rotateAngleY = MathHelper.sin(MathHelper.sqrt_float(f6) * 3.141593F * 2.0F) * 0.2F;
+            this.bipedBody.rotateAngleY = MathHelper.sin(MathHelper.sqrt_float(bingusStruggles$f6) * 3.141593F * 2.0F) * 0.2F;
             this.bipedBody.rotationPointY = 0.0F;
             this.bipedBody.rotateAngleX = 0.0F;
+
+            this.bipedCloak.rotationPointY = 0;
+            this.bipedCloak.rotateAngleX = 0;
+
             this.bipedRightLeg.rotationPointZ = 0.0F;
             this.bipedLeftLeg.rotationPointZ = 0.0F;
             this.bipedRightLeg.rotationPointY = 12.0F;
